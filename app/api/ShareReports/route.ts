@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ShareReportRequest } from "@/types/index.types";
-import { generatePdfReport, sendEmailWithAttachment } from "@/lib/util-functions";
+import { generatePdfReport, sendEmailWithAttachment } from "@/lib/report-utils";
 
 
 

@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import { type SetStateAction, useState, useEffect } from 'react';
 import { Download, Share2, FileText, Mail } from 'lucide-react';
@@ -112,33 +112,45 @@ export default function AssignmentPage() {
 
     const handleSendEmail = async () => {
         try {
+            setLoading(true);
+
             const includeFeedbackEl = document.getElementById('include-feedback') as HTMLInputElement;
             const includeSubmissionEl = document.getElementById('include-submission') as HTMLInputElement;
+            const customMessageEl = document.getElementById('custom-message') as HTMLTextAreaElement;
 
             if (!selectedSubmission || !selectedSubmission.assessment) {
                 toast.error('No assessment available to share');
                 return;
             }
 
-            const sharedReportData = {
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                toast.error('Please enter a valid email address');
+                return;
+            }
+
+            const emailRequest = {
                 assessmentId: selectedSubmission.assessment.id,
                 recipientEmail: email,
-                format: 'PDF', // Default to PDF for email sharing
+                format: 'PDF' as const, // Using 'as const' to specify literal type
                 includedFeedback: includeFeedbackEl?.checked ?? true,
                 includedSubmission: includeSubmissionEl?.checked ?? true,
+                customMessage: customMessageEl?.value || undefined,
             };
 
-            // You would need to create a new API endpoint for this
-            const response = await fetch('/api/share-report', {
+            console.log('Sending email request:', emailRequest);
+
+            const response = await fetch('/api/mailer', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(sharedReportData),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(emailRequest),
             });
 
+            const result = await response.json();
+
             if (!response.ok) {
-                throw new Error('Failed to share report');
+                throw new Error(result.error || 'Failed to send email');
             }
 
             toast.success(`Assessment report for ${selectedSubmission.student.name} has been sent to ${email}`);
@@ -146,23 +158,31 @@ export default function AssignmentPage() {
             setEmail('');
         } catch (error) {
             console.error('Error sharing report:', error);
-            toast.error('Failed to share report');
+            toast.error(`Failed to share report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleDownloadAll = async (format: string) => {
         try {
+            setLoading(true);
+
+            // Get checkbox elements
             const includeFeedback = document.getElementById(`${format}-include-feedback`) as HTMLInputElement;
             const includeSubmission = document.getElementById(`${format}-include-submission`) as HTMLInputElement;
             const combineFiles = document.getElementById(`${format}-combine-files`) as HTMLInputElement;
 
+            // Use optional chaining and nullish coalescing for safety
             const requestData = {
-                assignmentId: params.assignmentId,
+                // assignmentId is removed as it is not needed anymore
                 format: format.toUpperCase(),
                 includeFeedback: includeFeedback?.checked ?? true,
                 includeSubmission: includeSubmission?.checked ?? true,
                 combineFiles: combineFiles?.checked ?? false,
             };
+
+            console.log('Sending request with data:', requestData);
 
             const response = await fetch('/api/reports', {
                 method: 'POST',
@@ -172,26 +192,28 @@ export default function AssignmentPage() {
                 body: JSON.stringify(requestData),
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to generate reports');
-            }
-
             const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to generate reports');
+            }
 
             if (result.success) {
                 if (result.downloadUrl) {
-                    // For combined file
                     window.open(result.downloadUrl, '_blank');
                     toast.success(`Downloaded combined report in ${format.toUpperCase()} format`);
-                } else if (result.individualReports) {
-                    // For individual files
+                } else if (result.individualReports && result.individualReports.length > 0) {
                     toast.success(
                         `Generated ${result.individualReports.length} reports in ${format.toUpperCase()} format`,
                     );
-                    // You could open these in new tabs or provide links
+
                     result.individualReports.forEach((report: any) => {
-                        window.open(report.downloadUrl, '_blank');
+                        if (report.downloadUrl) {
+                            window.open(report.downloadUrl, '_blank');
+                        }
                     });
+                } else {
+                    toast.warning('No reports were generated');
                 }
             } else {
                 throw new Error(result.message || 'Failed to generate reports');
@@ -200,7 +222,9 @@ export default function AssignmentPage() {
             setDownloadDialogOpen(false);
         } catch (error) {
             console.error('Error downloading reports:', error);
-            toast.error('Failed to download reports');
+            toast.error(`Failed to download reports: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -457,7 +481,6 @@ export default function AssignmentPage() {
                 </main>
             </div>
 
-            {/* Share Dialog */}
             <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>

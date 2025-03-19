@@ -12,6 +12,17 @@ export async function GET(request: Request, { params }: { params: { assignmentId
         const limit = url.searchParams.get('limit') ? Number.parseInt(url.searchParams.get('limit')!) : undefined;
         const offset = url.searchParams.get('offset') ? Number.parseInt(url.searchParams.get('offset')!) : undefined;
 
+        // const where: any = {
+        //     assignmentId: assignmentId,
+        // };
+
+        // if (status) {
+        //     where.status = status;
+        // }
+
+        // if (studentId) {
+        //     where.studentId = studentId;
+        // }
 
         const assessments = await prisma.assessment.findMany({
             include: {
