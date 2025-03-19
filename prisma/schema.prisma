@@ -1,0 +1,160 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String
+  email         String        @unique
+  password      String
+  role          Role          @default(EDUCATOR)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  classes       Class[]
+  assignments   Assignment[]
+  rubrics       Rubric[]
+  assessments   Assessment[]
+}
+
+model Class {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  code        String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  students    Student[]
+  assignments Assignment[]
+}
+
+model Student {
+  id           String       @id @default(cuid())
+  name         String
+  email        String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  classId      String
+  class        Class        @relation(fields: [classId], references: [id])
+  submissions  Submission[]
+  assessments  Assessment[]
+
+  @@unique([email, classId])
+}
+
+model Assignment {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  dueDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  classId     String
+  class       Class        @relation(fields: [classId], references: [id])
+  rubricId    String?
+  rubric      Rubric?      @relation(fields: [rubricId], references: [id])
+  submissions Submission[]
+  assessments Assessment[]
+}
+
+model Submission {
+  id           String      @id @default(cuid())
+  fileName     String
+  fileUrl      String
+  submittedAt  DateTime    @default(now())
+  assignmentId String
+  assignment   Assignment  @relation(fields: [assignmentId], references: [id])
+  studentId    String
+  student      Student     @relation(fields: [studentId], references: [id])
+  assessment   Assessment?
+}
+
+model Rubric {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  subject     String?
+  gradeLevel  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  criteria    RubricCriteria[]
+  assignments Assignment[]
+}
+
+model RubricCriteria {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  maxScore    Int
+  weight      Float    @default(1.0)
+  rubricId    String
+  rubric      Rubric   @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+}
+
+model Assessment {
+  id           String     @id @default(cuid())
+  score        Int
+  comments     String?    @db.Text
+  status       Status     @default(GRADED)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  submissionId String     @unique
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  criteriaScores CriteriaScore[]
+  sharedReports SharedReport[]
+}
+
+model CriteriaScore {
+  id             String     @id @default(cuid())
+  score          Int
+  comments       String?
+  assessmentId   String
+  assessment     Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  criteriaName   String
+}
+
+model SharedReport {
+  id           String     @id @default(cuid())
+  recipientEmail String
+  sentAt       DateTime   @default(now())
+  format       ReportFormat @default(PDF)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id])
+  includedFeedback Boolean @default(true)
+  includedSubmission Boolean @default(true)
+}
+
+enum Role {
+  EDUCATOR
+  ADMIN
+}
+
+enum Status {
+  PENDING
+  GRADED
+  REVIEWED
+}
+
+enum ReportFormat {
+  PDF
+  DOCX
+}
