@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {DownloadReportsRequest} from "@/types/index.types";
-import generatePd
+import { generatePdfReport, uploadToStorage, combineReports, generateDocxReport } from "@/lib/util-functions";
 
 export async function POST(request: Request) {
   try {
@@ -45,13 +45,17 @@ export async function POST(request: Request) {
     // Combine files if requested
     let downloadUrl: string | null = null;
     if (combineFiles) {
-      const combinedReport = await combineReports(reports, format);
+      const validReports = reports.filter((report): report is Buffer => report !== undefined);
+      const combinedReport = await combineReports(validReports, format);
       downloadUrl = await uploadToStorage(combinedReport, `combined-reports-${assignmentId}.${format.toLowerCase()}`);
     } else {
       // Upload individual reports
       const individualUrls = await Promise.all(
-        reports.map((report, index) =>
+      reports
+        .filter((report): report is Buffer => report !== undefined)
+        .map((report, index) =>
           uploadToStorage(report, `report-${assessments[index].id}.${format.toLowerCase()}`)
+        )
       );
       return NextResponse.json({
         success: true,
