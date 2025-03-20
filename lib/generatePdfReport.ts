@@ -299,33 +299,47 @@ function drawWrappedText(
     maxWidth: number,
     maxHeight: number,
 ) {
-    const words = text.split(' ');
-    let line = '';
+    const lines = text.split('\n'); // Split text into lines based on newline characters
     let currentY = y;
     const lineHeight = size * 1.2;
     let availableHeight = maxHeight;
 
-    for (const word of words) {
-        const testLine = line + (line ? ' ' : '') + word;
-        const textWidth = font.widthOfTextAtSize(testLine, size);
+    for (const line of lines) {
+        const words = line.split(' ');
+        let currentLine = '';
 
-        if (textWidth > maxWidth && line.length > 0) {
-            drawText(page, line, x, currentY, size, font, color);
-            line = word;
+        for (const word of words) {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            const textWidth = font.widthOfTextAtSize(testLine, size);
+
+            if (textWidth > maxWidth && currentLine.length > 0) {
+                // Draw the current line and move to the next line
+                drawText(page, currentLine, x, currentY, size, font, color);
+                currentLine = word;
+                currentY -= lineHeight;
+                availableHeight -= lineHeight;
+
+                if (availableHeight < 0) {
+                    // Stop if we run out of space
+                    drawText(page, '...', x, currentY + lineHeight, size, font, color);
+                    return;
+                }
+            } else {
+                currentLine = testLine;
+            }
+        }
+
+        // Draw the remaining text in the current line
+        if (currentLine.length > 0 && availableHeight >= 0) {
+            drawText(page, currentLine, x, currentY, size, font, color);
             currentY -= lineHeight;
             availableHeight -= lineHeight;
 
             if (availableHeight < 0) {
                 drawText(page, '...', x, currentY + lineHeight, size, font, color);
-                break;
+                return;
             }
-        } else {
-            line = testLine;
         }
-    }
-
-    if (line.length > 0 && availableHeight >= 0) {
-        drawText(page, line, x, currentY, size, font, color);
     }
 }
 

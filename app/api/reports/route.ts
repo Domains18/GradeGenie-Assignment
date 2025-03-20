@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { DownloadReportsRequest } from '@/types/index.types';
-import { ReportContent, generateReport, uploadToStorage, combineReports } from '@/lib/report-utils';
-
+import { ReportContent, uploadToStorage, combineReports } from '@/lib/report-utils';
+import { generateReport } from '@/lib/generatePdfReport';
 
 
 
