@@ -66,7 +66,6 @@ export default function AssignmentPage() {
     const [downloadFormat, setDownloadFormat] = useState('pdf');
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
-    const [assessments, setAssessments] = useState<Assessment[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -87,22 +86,8 @@ export default function AssignmentPage() {
             }
         };
 
-        const fetchAssessments = async () => {
-            try {
-                const response = await fetch(`/api/assessments`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch assessments');
-                }
-                const data = await response.json();
-                setAssessments(data);
-            } catch (error) {
-                console.error('Error fetching assessments:', error);
-                toast.error('Failed to load assessments');
-            }
-        };
 
         fetchSubmissions();
-        fetchAssessments();
     }, [params.assignmentId]);
 
     const handleShare = (submission: Submission) => {

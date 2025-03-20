@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: { assignmentId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ assignmentId: string }> }) {
     try {
-        const assignmentId = params.assignmentId;
 
         const submissions = await prisma.submission.findMany({
             include: {
