@@ -299,7 +299,7 @@ function drawWrappedText(
     maxWidth: number,
     maxHeight: number,
 ) {
-    const lines = text.split('\n'); // Split text into lines based on newline characters
+    const lines = text.split('\n'); 
     let currentY = y;
     const lineHeight = size * 1.2;
     let availableHeight = maxHeight;
