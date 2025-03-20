@@ -24,9 +24,6 @@ export interface ReportContent {
     assessmentDate?: Date;
 }
 
-/**
- * Generates a professionally styled PDF report
- */
 export async function generatePdfReport(content: ReportContent): Promise<Buffer> {
     const pdfDoc = await PDFDocument.create();
 
